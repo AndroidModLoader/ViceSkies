@@ -56,8 +56,9 @@ extern "C" void StarrySkies_Patch(float intensity)
 
             if(CalcScreenCoors(&WorldStarPos, &ScreenPos, &SZX, &SZY, false))
             {
+                if(!hasJPatch15) SZX /= *ms_fAspectRatio;
                 uint8_t brightness = (1.0 - 0.015f * (rand() & 0x1F)) * intensity;
-                RenderBufferedOneXLUSprite(ScreenPos, SZX * SZ / *ms_fAspectRatio, SZY * SZ,
+                RenderBufferedOneXLUSprite(ScreenPos, SZX * SZ, SZY * SZ,
                                            brightness, brightness, brightness, 255, 1.0f / ScreenPos.z, 255);
             }
         }

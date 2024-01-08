@@ -13,6 +13,12 @@
 #define STARS_STARTHOUR         22
 #define START_LASTHOUR          5
 
+
+
+uintptr_t pGTAVC;
+void *hGTAVC;
+bool hasJPatch15;
+
 #include "SimpleGTA.h"
 #include "vars.inl"
 #ifdef STARRY_SKIES
@@ -21,11 +27,8 @@
 
 
 
-MYMOD(net.rusjj.viceskies, ViceSkies, 1.0, RusJJ)
+MYMOD(net.rusjj.viceskies, ViceSkies, 1.1, RusJJ)
 NEEDGAME(com.rockstargames.gtavc)
-
-uintptr_t pGTAVC;
-void *hGTAVC;
 
 #ifndef STARRY_SKIES
     float StarCoorsX[9] = { 0.0f, 0.05f, 0.13f, 0.4f, 0.7f, 0.6f, 0.27f, 0.55f, 0.75f };
@@ -107,7 +110,8 @@ DECL_HOOKv(RenderClouds)
             if(CalcScreenCoors(&worldpos, &screenpos, &szx, &szy, false))
             {
                 float sz = 0.8f * StarSizes[i % 9];
-                RenderBufferedOneXLUSprite(screenpos, szx * sz / *ms_fAspectRatio, szy * sz, brightness, brightness, brightness, 255, 1.0f / screenpos.z, 255);
+                if(!hasJPatch15) szx /= *ms_fAspectRatio;
+                RenderBufferedOneXLUSprite(screenpos, szx * sz, szy * sz, brightness, brightness, brightness, 255, 1.0f / screenpos.z, 255);
             }
         }
       #else
@@ -156,7 +160,8 @@ DECL_HOOKv(RenderClouds)
             float sz = *MoonSize * 2.0f + 4.0f;
             int brightness = decoverage * (180 - moonfadeout);
           #endif
-            RenderBufferedOneXLUSprite(screenpos, szx * sz / *ms_fAspectRatio, szy * sz, brightness, brightness, brightness, 255, 1.0f / screenpos.z, 255);
+            if(!hasJPatch15) szx /= *ms_fAspectRatio;
+            RenderBufferedOneXLUSprite(screenpos, szx * sz, szy * sz, brightness, brightness, brightness, 255, 1.0f / screenpos.z, 255);
             FlushSpriteBuffer();
         }
     }
@@ -177,7 +182,8 @@ DECL_HOOKv(RenderClouds)
             worldpos.z = 40.0f + pos.z;
             if(CalcScreenCoors(&worldpos, &screenpos, &szx, &szy, false))
             {
-                RenderBufferedOneXLUSprite_Rotate_Dimension(screenpos, szx * 320.0f / *ms_fAspectRatio, szy * 40.0f, r, g, b, 255, 1.0f / screenpos.z, *ms_cameraRoll, 255);
+                if(!hasJPatch15) szx /= *ms_fAspectRatio;
+                RenderBufferedOneXLUSprite_Rotate_Dimension(screenpos, szx * 320.0f, szy * 40.0f, r, g, b, 255, 1.0f / screenpos.z, *ms_cameraRoll, 255);
             }
         }
         FlushSpriteBuffer();
@@ -236,7 +242,8 @@ DECL_HOOKv(RenderClouds)
                 {
                     fCloudHighlight[i] = 0.0f;
                 }
-                RenderBufferedOneXLUSprite_Rotate_2Colours(screenpos, szx * 55.0f / *ms_fAspectRatio, szy * 55.0f, tr, tg, tb, br, bg, bb, 0.0f, -1.0f, 1.0f / screenpos.z, ((2.0f * M_PI) * (uint16_t)*IndividualRotation) / 65336.0f + *ms_cameraRoll, fluffyalpha);
+                if(!hasJPatch15) szx /= *ms_fAspectRatio;
+                RenderBufferedOneXLUSprite_Rotate_2Colours(screenpos, szx * 55.0f, szy * 55.0f, tr, tg, tb, br, bg, bb, 0.0f, -1.0f, 1.0f / screenpos.z, ((2.0f * M_PI) * (uint16_t)*IndividualRotation) / 65336.0f + *ms_cameraRoll, fluffyalpha);
                 bCloudOnScreen[i] = true;
             }
             else
@@ -258,7 +265,8 @@ DECL_HOOKv(RenderClouds)
             
             if(bCloudOnScreen[i] && CalcScreenCoors(&worldpos, &screenpos, &szx, &szy, false) && fSunDist[i] < sundistHilit)
             {
-                RenderBufferedOneXLUSprite_Rotate_Aspect(screenpos, szx * 30.0f / *ms_fAspectRatio, szy * 30.0f, 200 * fCloudHighlight[i], 0, 0, 255, 1.0f / screenpos.z,
+                if(!hasJPatch15) szx /= *ms_fAspectRatio;
+                RenderBufferedOneXLUSprite_Rotate_Aspect(screenpos, szx * 30.0f, szy * 30.0f, 200 * fCloudHighlight[i], 0, 0, 255, 1.0f / screenpos.z,
                                                          1.7f - GetATanOfXY(screenpos.x - *SunScreenX, screenpos.y - *SunScreenY) + *ms_cameraRoll, 255);
             }
         }
@@ -275,7 +283,8 @@ DECL_HOOKv(RenderClouds)
             worldpos = pos + *CamPos;
             if(CalcScreenCoors(&worldpos, &screenpos, &szx, &szy, false))
             {
-                RenderBufferedOneXLUSprite(screenpos, 2.0f * szx / *ms_fAspectRatio, 50.0 * szy, BowRed[i] * *Rainbow, BowGreen[i] * *Rainbow, BowBlue[i] * *Rainbow, 255, 1.0f / screenpos.z, 255);
+                if(!hasJPatch15) szx /= *ms_fAspectRatio;
+                RenderBufferedOneXLUSprite(screenpos, 2.0f * szx, 50.0 * szy, BowRed[i] * *Rainbow, BowGreen[i] * *Rainbow, BowBlue[i] * *Rainbow, 255, 1.0f / screenpos.z, 255);
             }
         }
         FlushSpriteBuffer();
@@ -333,6 +342,7 @@ extern "C" void OnModLoad()
     logger->SetTag("Vice Skies");
     pGTAVC = aml->GetLib("libGTAVC.so");
     hGTAVC = aml->GetLibHandle("libGTAVC.so");
+    hasJPatch15 = aml->HasModOfVersion("net.rusjj.jpatch", "1.5");
     
     if(!pGTAVC || !hGTAVC)
     {
