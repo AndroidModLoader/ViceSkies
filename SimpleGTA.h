@@ -19,6 +19,18 @@ struct CVector : CVector2D
     {
         return { x + vecTwo.x, y + vecTwo.y, z + vecTwo.z };
     }
+    inline void Normalise()
+    {
+        float lensq = this->x * this->x + this->y * this->y + this->z * this->z;
+        if(lensq > 0.0f)
+        {
+            float invsqrt = 1.0f / sqrtf(lensq);
+            this->x *= invsqrt;
+            this->y *= invsqrt;
+            this->z *= invsqrt;
+        }
+        else this->x = 1.0f;
+    }
 };
 
 class CMatrix
