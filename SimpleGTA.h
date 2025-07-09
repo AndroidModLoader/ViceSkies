@@ -19,6 +19,10 @@ struct CVector : CVector2D
     {
         return { x + vecTwo.x, y + vecTwo.y, z + vecTwo.z };
     }
+    inline CVector operator*(float v)
+    {
+        return { x * v, y * v, z * v };
+    }
     inline void Normalise()
     {
         float lensq = this->x * this->x + this->y * this->y + this->z * this->z;
@@ -73,4 +77,11 @@ public:
     void*        m_pAttachedMatrix;
     bool         m_bOwnsAttachedMatrix;
     char         matrixpad[3];
+};
+
+struct RwIm3DVertex
+{
+    CVector pos, normal;
+    uint32_t color;
+    float u, v;
 };

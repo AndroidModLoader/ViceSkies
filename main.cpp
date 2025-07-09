@@ -31,16 +31,16 @@ bool hasJPatch15;
 
 
 
-MYMOD(net.rusjj.viceskies, ViceSkies, 1.2, RusJJ)
+MYMOD(net.rusjj.viceskies, ViceSkies, 1.3, RusJJ)
 NEEDGAME(com.rockstargames.gtavc)
 
-float LowCloudsX[12] = { 1.0f, 0.7f, 0.0f, -0.7f, -1.0f, -0.7f, 0.0f, 0.7f, 0.8f, -0.8f, 0.4f, -0.4f };
-float LowCloudsY[12] = { 0.0f, -0.7f, -1.0f, -0.7f, 0.0f, 0.7f, 1.0f, 0.7f, 0.4f, 0.4f, -0.8f, -0.8f };
-float LowCloudsZ[12] = { 0.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.3f, 0.9f, 0.4f, 1.3f, 1.4f, 1.2f, 1.7f };
+float LowCloudsX[12] = { 1.0f,  0.7f,  0.0f, -0.7f, -1.0f, -0.7f, 0.0f, 0.7f, 0.8f, -0.8f,  0.4f, -0.4f };
+float LowCloudsY[12] = { 0.0f, -0.7f, -1.0f, -0.7f,  0.0f,  0.7f, 1.0f, 0.7f, 0.4f,  0.4f, -0.8f, -0.8f };
+float LowCloudsZ[12] = { 0.0f,  1.0f,  0.5f,  0.0f,  1.0f,  0.3f, 0.9f, 0.4f, 1.3f,  1.4f,  1.2f,  1.7f };
 
-uint8_t BowRed[6] = { 30, 30, 30, 10, 0, 15 };
-uint8_t BowGreen[6] = { 0, 15, 30, 30, 0, 0 };
-uint8_t BowBlue[6] = { 0, 0, 0, 10, 30, 30 };
+uint8_t BowRed[6]   = { 30, 30, 30, 10,  0, 15 };
+uint8_t BowGreen[6] = {  0, 15, 30, 30,  0,  0 };
+uint8_t BowBlue[6]  = {  0,  0,  0, 10, 30, 30 };
 
 float CoorsOffsetX[37] = {
     0.0f, 60.0f, 72.0f, 48.0f, 21.0f, 12.0f,
@@ -66,6 +66,9 @@ float CoorsOffsetZ[37] = {
     1.7f, 2.0f, 2.0f, 2.3f, 1.9f, 2.4f,
     2.0f, 2.0f, 1.5f, 1.2f, 1.7f, 1.5f, 2.1f
 };
+
+RwIm3DVertex Skies_TempBufferRenderVertices[32];
+uint16_t pShootingStarIndices[] = { 0, 1 };
 
 CVector MoonVector;
 inline float SQR(float v) { return v*v; }
@@ -202,10 +205,12 @@ DECL_HOOKv(RenderClouds)
         int fluffyalpha = 160 * decoverage;
         float rot_sin = sinf(*CloudRotation);
         float rot_cos = cosf(*CloudRotation);
+
+        float rotationValue = ((2.0f * M_PI) * (uint16_t)*IndividualRotation) / 65536.0f + *ms_cameraRoll;
         
-        RwRenderStateSet(1, *(gpCloudTex[4]));
         RwRenderStateSet(10, (void*)5);
         RwRenderStateSet(11, (void*)6);
+        RwRenderStateSet(1, *(gpCloudTex[4]));
         for(int i = 0; i < 37; ++i)
         {
             RwV3d pos = { 2.0f*CoorsOffsetX[i], 2.0f*CoorsOffsetY[i], 40.0f*CoorsOffsetZ[i] + 40.0f };
@@ -228,12 +233,12 @@ DECL_HOOKv(RenderClouds)
                 
                 if(fSunDist[i] < distLimit)
                 {
-                    tr = tr * (1.0f - fCloudHighlight[i]) + 255 * fCloudHighlight[i];
-                    tg = tg * (1.0f - fCloudHighlight[i]) + 150 * fCloudHighlight[i];
-                    tb = tb * (1.0f - fCloudHighlight[i]) + 150 * fCloudHighlight[i];
-                    br = br * (1.0f - fCloudHighlight[i]) + 255 * fCloudHighlight[i];
-                    bg = bg * (1.0f - fCloudHighlight[i]) + 150 * fCloudHighlight[i];
-                    bb = bb * (1.0f - fCloudHighlight[i]) + 150 * fCloudHighlight[i];
+                    tr = tr * (1.0f - fCloudHighlight[i]) + 235 * fCloudHighlight[i];
+                    tg = tg * (1.0f - fCloudHighlight[i]) + 190 * fCloudHighlight[i];
+                    tb = tb * (1.0f - fCloudHighlight[i]) + 190 * fCloudHighlight[i];
+                    br = br * (1.0f - fCloudHighlight[i]) + 235 * fCloudHighlight[i];
+                    bg = bg * (1.0f - fCloudHighlight[i]) + 190 * fCloudHighlight[i];
+                    bb = bb * (1.0f - fCloudHighlight[i]) + 190 * fCloudHighlight[i];
                     if(fSunDist[i] < sundistBlocked) *SunBlockedByClouds = (fluffyalpha > 50);
                 }
                 else
@@ -241,7 +246,7 @@ DECL_HOOKv(RenderClouds)
                     fCloudHighlight[i] = 0.0f;
                 }
                 if(!hasJPatch15) szx /= *ms_fAspectRatio;
-                RenderBufferedOneXLUSprite_Rotate_2Colours(screenpos, szx * 55.0f, szy * 55.0f, tr, tg, tb, br, bg, bb, 0.0f, -1.0f, 1.0f / screenpos.z, ((2.0f * M_PI) * (uint16_t)*IndividualRotation) / 65336.0f + *ms_cameraRoll, fluffyalpha);
+                RenderBufferedOneXLUSprite_Rotate_2Colours(screenpos, szx * 55.0f, szy * 55.0f, tr, tg, tb, br, bg, bb, 0.0f, -1.0f, 1.0f / screenpos.z, rotationValue, fluffyalpha);
                 bCloudOnScreen[i] = true;
             }
             else
@@ -251,9 +256,9 @@ DECL_HOOKv(RenderClouds)
         }
         FlushSpriteBuffer();
         
-        RwRenderStateSet(1, *(gpCloudTex[3]));
         RwRenderStateSet(10, (void*)2);
         RwRenderStateSet(11, (void*)2);
+        RwRenderStateSet(1, *(gpCloudTex[3]));
         for(int i = 0; i < 37; ++i)
         {
             RwV3d pos = { 2.0f * CoorsOffsetX[i], 2.0f * CoorsOffsetY[i], 40.0f * CoorsOffsetZ[i] + 40.0f };
@@ -286,6 +291,39 @@ DECL_HOOKv(RenderClouds)
             }
         }
         FlushSpriteBuffer();
+    }
+
+    // Falling Star (backported from San Andreas)
+    if ( (*NewWeatherType == 0 || *NewWeatherType == 4) )
+    {
+        uint32_t v36 = (*m_snTimeInMilliseconds & 0x1FFF);
+        if (v36 < 800)
+        {
+            float v43 = (400 - v36) + (400 - v36);
+            Skies_TempBufferRenderVertices[0].color = 0xE1FFFFFF;
+            Skies_TempBufferRenderVertices[1].color = 0x00FFFFFF;
+
+            uint32_t v37 = (*m_snTimeInMilliseconds >> 13) & 0x3F;
+            CVector starScale{ 0.1f * (v37 % 7 - 3), 0.1f * ((*m_snTimeInMilliseconds >> 13) - 4), 1.0f };
+            starScale.Normalise();
+            CVector starDir{ (float)(v37 % 9 - 5), (float)(v37 % 10 - 5), 0.1f };
+            starDir.Normalise();
+
+            worldpos = *CamPos + starDir * 1000.0f;
+
+            Skies_TempBufferRenderVertices[0].pos = worldpos + starScale * v43;
+            Skies_TempBufferRenderVertices[1].pos = worldpos + starScale * (v43 + 50.0f);
+
+            RwRenderStateSet(1, (void*)0); // FIX_BUGS
+            RwRenderStateSet(10, (void*)5);
+            RwRenderStateSet(11, (void*)6);
+
+            if (RwIm3DTransform(Skies_TempBufferRenderVertices, 2, NULL, 0x10 | 0x8))
+            {
+                RwIm3DRenderIndexedPrimitive(2, pShootingStarIndices, 2);
+                RwIm3DEnd();
+            }
+        }
     }
     
     RwRenderStateSet(8, (void*)1);
@@ -369,7 +407,7 @@ extern "C" void OnModLoad()
     
     if(!pGTAVC || !hGTAVC)
     {
-        logger->Error("This mod is obviously works in Vice City only. Aborting.");
+        logger->Error("This mod only for Vice City. Stopping.");
         return;
     }
 
@@ -385,6 +423,9 @@ extern "C" void OnModLoad()
     SET_TO(RenderBufferedOneXLUSprite_Rotate_Aspect,    aml->GetSym(hGTAVC, "_ZN7CSprite40RenderBufferedOneXLUSprite_Rotate_AspectEfffffhhhsffh"));
     SET_TO(RenderBufferedOneXLUSprite_Rotate_2Colours,  aml->GetSym(hGTAVC, "_ZN7CSprite42RenderBufferedOneXLUSprite_Rotate_2ColoursEfffffhhhhhhffffh"));
     SET_TO(GetATanOfXY,                aml->GetSym(hGTAVC, "_ZN8CGeneral11GetATanOfXYEff"));
+    SET_TO(RwIm3DTransform,            aml->GetSym(hGTAVC, "_Z15RwIm3DTransformP18RxObjSpace3DVertexjP11RwMatrixTagj"));
+    SET_TO(RwIm3DRenderIndexedPrimitive,aml->GetSym(hGTAVC, "_Z28RwIm3DRenderIndexedPrimitive15RwPrimitiveTypePti"));
+    SET_TO(RwIm3DEnd,                  aml->GetSym(hGTAVC, "_Z9RwIm3DEndv"));
     
     SET_TO(SunBlockedByClouds,         aml->GetSym(hGTAVC, "_ZN8CCoronas18SunBlockedByCloudsE"));
     SET_TO(Foggyness,                  aml->GetSym(hGTAVC, "_ZN8CWeather9FoggynessE"));
@@ -414,6 +455,7 @@ extern "C" void OnModLoad()
     SET_TO(m_CurrentStoredValue,       aml->GetSym(hGTAVC, "_ZN10CTimeCycle20m_CurrentStoredValueE"));
     SET_TO(IndividualRotation,         aml->GetSym(hGTAVC, "_ZN7CClouds18IndividualRotationE"));
     SET_TO(MoonSize,                   aml->GetSym(hGTAVC, "_ZN8CCoronas8MoonSizeE"));
+    SET_TO(m_snTimeInMilliseconds,     aml->GetSym(hGTAVC, "_ZN6CTimer22m_snTimeInMillisecondsE"));
     SET_TO(NewWeatherType,             aml->GetSym(hGTAVC, "_ZN8CWeather14NewWeatherTypeE"));
     SET_TO(OldWeatherType,             aml->GetSym(hGTAVC, "_ZN8CWeather14OldWeatherTypeE"));
     SET_TO(RsGlobal,                   aml->GetSym(hGTAVC, "RsGlobal"));
